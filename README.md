@@ -165,10 +165,40 @@ uv run pre-commit run --all-files
 
 ### Testing
 
-Run tests:
+This project uses a dual testing approach to optimize test execution and API usage:
+
+#### Wolfram|Alpha API Tests
+Tests that require live API calls for comprehensive functionality verification:
 ```bash
+# Run full integration tests (requires WOLFRAM_APP_ID)
 uv run python test.py
 ```
+
+**Includes:**
+- MCP server configuration
+- Query function with 8 test cases (arithmetic, derivatives, scientific constants, etc.)
+- Error handling and edge cases
+- Live API connectivity and response validation
+
+#### Unit Tests (No API Required)
+Fast, isolated tests that don't require API calls:
+```bash
+# Run unit tests with pytest
+uv run pytest tests/ -v
+```
+
+**Includes (16 tests):**
+- Unit completion functionality (9 tests)
+- Unit conversion prompt generation (5 tests)
+- Unit category structure validation (1 test)
+- Unit duplicate detection (1 test)
+
+All unit conversion tests are in `tests/test_unit_conversion.py`
+
+#### Test Coverage
+- **Integration Tests**: Verify end-to-end functionality with Wolfram|Alpha API
+- **Unit Tests**: Ensure core logic correctness without external dependencies
+- **Total Coverage**: All server functionality is tested across both approaches
 
 ### CI/CD
 
