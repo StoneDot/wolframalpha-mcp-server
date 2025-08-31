@@ -9,7 +9,43 @@ A Model Context Protocol (MCP) server that provides access to the Wolfram|Alpha 
 - Support for optional parameters (character limits, units, location)
 - Easy integration with Claude Desktop and other MCP clients
 
-## Setup
+## Usage
+
+### Configuration Example
+
+Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "wolframalpha": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "path/to/server",
+        "run",
+        "python",
+        "-m",
+        "wolframalpha_mcp_server.server"
+      ],
+      "env": {
+        "WOLFRAM_APP_ID": "your_app_id_here"
+      }
+    }
+  }
+}
+```
+
+### Standalone
+```bash
+# Using uv
+uv run python -m wolframalpha_mcp_server.server
+
+# Or directly
+python -m wolframalpha_mcp_server.server
+```
+
+## Development Setup
 
 1. **Get a Wolfram|Alpha App ID**
    - Visit https://developer.wolframalpha.com/portal/myapps/
@@ -31,67 +67,6 @@ A Model Context Protocol (MCP) server that provides access to the Wolfram|Alpha 
    # Edit .env and add your Wolfram|Alpha App ID
    ```
 
-## Usage
-
-### Standalone
-```bash
-# Using uv
-uv run python -m wolframalpha_mcp_server.server
-
-# Or directly
-python -m wolframalpha_mcp_server.server
-```
-
-### With Claude Desktop
-
-Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "wolframalpha": {
-      "command": "uv",
-      "args": ["run", "python", "-m", "wolframalpha_mcp_server.server"],
-      "cwd": "/path/to/wolframalpha-llm",
-      "env": {
-        "WOLFRAM_APP_ID": "your_app_id_here"
-      }
-    }
-  }
-}
-```
-
-### With Claude Code
-
-Add the MCP server using the Claude Code CLI:
-
-```bash
-claude mcp add wolframalpha uv run python -m wolframalpha_mcp_server.server -e WOLFRAM_APP_ID=your_app_id_here
-```
-
-Or manually add to your MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "wolframalpha": {
-      "type": "stdio",
-      "command": "uv",
-      "args": [
-        "run",
-        "python",
-        "-m",
-        "wolframalpha_mcp_server.server",
-        "--directory",
-        "/path/to/wolframalpha-llm"
-      ],
-      "env": {
-        "WOLFRAM_APP_ID": "your_app_id_here"
-      }
-    }
-  }
-}
-```
 
 ## Available Tools
 
