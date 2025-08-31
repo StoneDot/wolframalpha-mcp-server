@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wolframalpha-mcp-server"
+version = "0.1.0"
+description = "MCP Server for Wolfram|Alpha LLM API"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.13.0",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0"
+]
+
+[project.scripts]
+wolframalpha-mcp-server = "wolframalpha_mcp_server.server:main"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0"
+]
