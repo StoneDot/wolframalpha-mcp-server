@@ -14,6 +14,13 @@ A Model Context Protocol (MCP) server that provides access to the Wolfram|Alpha 
 
 ## Usage
 
+### Setup
+
+**Get a Wolfram|Alpha App ID**
+- Visit https://developer.wolframalpha.com/portal/myapps/
+- Sign up or log in with your Wolfram ID
+- Create a new app and copy the App ID
+
 ### Configuration Example
 
 Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
@@ -40,36 +47,21 @@ Add to your Claude Desktop configuration file (`claude_desktop_config.json`):
 ```
 
 ### Standalone
-```bash
-# Using uv
-uv run python -m wolframalpha_mcp_server.server
 
-# Or directly
-python -m wolframalpha_mcp_server.server
-```
-
-## Development Setup
-
-1. **Get a Wolfram|Alpha App ID**
-   - Visit https://developer.wolframalpha.com/portal/myapps/
-   - Sign up or log in with your Wolfram ID
-   - Create a new app and copy the App ID
-
-2. **Install dependencies**
-   ```bash
-   # Using uv (recommended)
-   uv sync
-   
-   # Or using pip
-   pip install -e .
-   ```
-
-3. **Configure environment variables**
+1. **Configure environment variables**
    ```bash
    cp .env.example .env
    # Edit .env and add your Wolfram|Alpha App ID
    ```
 
+2. **Run the server**
+   ```bash
+   # Using uv
+   uv run python -m wolframalpha_mcp_server.server
+
+   # Or directly
+   python -m wolframalpha_mcp_server.server
+   ```
 
 ## Available Tools
 
@@ -108,7 +100,7 @@ query_wolfram("derivative of x^2")
 query_wolfram("solve x^2 + 3x + 2 = 0")
 query_wolfram("integral sin(x) from 0 to pi")
 
-# Scientific queries  
+# Scientific queries
 query_wolfram("speed of light in km/s")
 query_wolfram("molecular weight of caffeine")
 query_wolfram("density of gold")
@@ -133,10 +125,58 @@ The server handles common API errors gracefully:
 
 ## Development
 
+### Setup
+
+Install dependencies:
+```bash
+# Using uv (recommended)
+uv sync --dev
+
+# Or using pip
+pip install -e .[dev]
+```
+
+### Code Quality
+
+This project uses `ruff` for linting and formatting:
+
+```bash
+# Check and fix linting issues
+uv run ruff check --fix .
+
+# Format code
+uv run ruff format .
+
+# Run both checks
+uv run ruff check . && uv run ruff format .
+```
+
+### Pre-commit Hooks
+
+Pre-commit hooks are configured to automatically run linting and formatting:
+
+```bash
+# Install pre-commit hooks
+uv run pre-commit install
+
+# Run manually on all files
+uv run pre-commit run --all-files
+```
+
+### Testing
+
 Run tests:
 ```bash
 uv run python test.py
 ```
+
+### CI/CD
+
+GitHub Actions automatically run:
+- Linting with `ruff check`
+- Formatting validation with `ruff format --check`
+- Tests across Python 3.10, 3.11, and 3.12
+- Pre-commit checks on all files
 
 ## License
 

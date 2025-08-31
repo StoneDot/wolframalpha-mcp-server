@@ -7,11 +7,36 @@ name = "wolframalpha-mcp-server"
 version = "0.2.0"
 description = "MCP Server for Wolfram|Alpha LLM API"
 readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Assistant", email = "assistant@example.com"}
+]
+keywords = ["mcp", "wolfram", "alpha", "api", "server", "computational"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 requires-python = ">=3.10"
 dependencies = [
     "mcp>=1.13.0",
     "requests>=2.31.0",
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=4.3.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.12.11",
 ]
 
 [project.scripts]
@@ -19,6 +44,35 @@ wolframalpha-mcp-server = "wolframalpha_mcp_server.server:main"
 
 [tool.uv]
 dev-dependencies = [
+    "pre-commit>=4.3.0",
     "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0"
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.12.11",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint.isort]
+known-first-party = ["wolframalpha_mcp_server"]
