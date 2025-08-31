@@ -203,6 +203,10 @@ async def test_completion_functionality():
             self.name = name
             self.value = value
 
+    class MockContext:
+        def __init__(self, arguments):
+            self.arguments = arguments
+
     test_cases = [
         {
             "name": "Unit completion - empty query",
@@ -214,7 +218,7 @@ async def test_completion_functionality():
             "name": "Unit completion - 'ft' search",
             "ref": MockPromptRef("unit_conversion"),
             "argument": MockArgument("to_unit", "ft"),
-            "expected_contains": ["ft", "foot"],
+            "expected_contains": ["ft", "ft/s", "ftm"],
         },
         {
             "name": "Unit completion - 'meter' search",
@@ -227,6 +231,20 @@ async def test_completion_functionality():
             "ref": MockPromptRef("unit_conversion"),
             "argument": MockArgument("to_unit", "feet"),
             "expected_contains": ["feet", "cubic_feet", "square_feet"],
+        },
+        {
+            "name": "Unit completion with context - length category",
+            "ref": MockPromptRef("unit_conversion"),
+            "argument": MockArgument("to_unit", "m"),
+            "context": MockContext([MockArgument("from_unit", "foot")]),
+            "expected_contains": ["meter", "meters", "m"],
+        },
+        {
+            "name": "Unit completion with invalid context - should return empty",
+            "ref": MockPromptRef("unit_conversion"),
+            "argument": MockArgument("to_unit", "m"),
+            "context": MockContext([MockArgument("from_unit", "invalid_unit_xyz")]),
+            "expected_empty": True,
         },
         {
             "name": "Non-unit conversion prompt (should return None)",
@@ -243,7 +261,7 @@ async def test_completion_functionality():
             result = await handle_completion(
                 test_case["ref"],
                 test_case["argument"],
-                None,  # context
+                test_case.get("context", None),
             )
 
             # Check if this test case expects None (only for non-unit conversion prompts)
@@ -261,9 +279,23 @@ async def test_completion_functionality():
                     print("✗ Unexpected None result")
                 else:
                     values = result.values if hasattr(result, "values") else []
-                    print(f"✓ Got {len(values)} completion results")
+                    has_more = result.hasMore if hasattr(result, "hasMore") else False
+                    print(
+                        f"✓ Got {len(values)} completion results (hasMore: {has_more})"
+                    )
 
-                    if "expected_min_results" in test_case:
+                    # Check if empty result was expected
+                    if test_case.get("expected_empty"):
+                        if len(values) == 0:
+                            print(
+                                "✓ Correctly returned empty result for invalid context"
+                            )
+                        else:
+                            print(
+                                f"✗ Expected empty result but got {len(values)} items"
+                            )
+
+                    elif "expected_min_results" in test_case:
                         min_expected = test_case["expected_min_results"]
                         if len(values) >= min_expected:
                             print(f"✓ At least {min_expected} results returned")

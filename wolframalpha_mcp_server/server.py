@@ -1167,26 +1167,67 @@ async def handle_completion(ref, argument, context):
         context: Optional CompletionContext with previously resolved arguments
 
     Returns:
-        Completion object with values list
+        Completion object with values list and hasMore flag
     """
     from mcp.types import Completion
 
     # Handle unit_conversion prompt completions
+    # Three completion patterns:
+    # 1. No context → return all units (769 units across 40 categories)
+    # 2. Valid context → return units from same physical quantity category only
+    # 3. Invalid context → return empty result (unit not found in any category)
     if hasattr(ref, "name") and ref.name == "unit_conversion":
         if argument.name in ["from_unit", "to_unit"]:
             query = argument.value.lower().strip() if argument.value else ""
 
-            # Get all units from all categories
-            all_units = []
-            for category_units in UNIT_CATEGORIES.values():
-                all_units.extend(category_units)
+            # Determine target units based on context
+            target_units = []
+            context_provided = False
 
+            # Pattern 2 & 3: Check if context contains the other unit argument
+            if context and hasattr(context, "arguments"):
+                other_arg_name = (
+                    "to_unit" if argument.name == "from_unit" else "from_unit"
+                )
+                other_unit = None
+
+                for arg in context.arguments:
+                    if arg.name == other_arg_name and arg.value:
+                        other_unit = arg.value.strip()
+                        context_provided = True
+                        break
+
+                if other_unit:
+                    # Find which physical quantity category the other unit belongs to
+                    target_category = None
+                    for category, units in UNIT_CATEGORIES.items():
+                        if other_unit in units:
+                            target_category = category
+                            break
+
+                    if target_category:
+                        # Pattern 2: Valid context - restrict to same category
+                        # e.g., from_unit="foot" (length) → to_unit suggestions limited to length units
+                        target_units = UNIT_CATEGORIES[target_category]
+                    else:
+                        # Pattern 3: Invalid context - return empty to avoid confusion
+                        # e.g., from_unit="invalid_xyz" → no suggestions for to_unit
+                        return Completion(values=[], hasMore=False)
+
+            # Pattern 1: No context provided - offer all available units
+            if not context_provided:
+                for category_units in UNIT_CATEGORIES.values():
+                    target_units.extend(category_units)
+
+            # Handle empty query
             if not query:
-                # Return first 20 units if no query
-                return Completion(values=sorted(all_units)[:20])
+                sorted_units = sorted(target_units)
+                return Completion(
+                    values=sorted_units[:20], hasMore=len(sorted_units) > 20
+                )
 
             # Filter units that contain the query string
-            matching_units = [unit for unit in all_units if query in unit.lower()]
+            matching_units = [unit for unit in target_units if query in unit.lower()]
 
             # Sort by relevance (exact matches first, then starts with, then contains)
             exact_matches = [unit for unit in matching_units if unit.lower() == query]
@@ -1201,7 +1242,10 @@ async def handle_completion(ref, argument, context):
                 if query in unit.lower() and not unit.lower().startswith(query)
             ]
             result = exact_matches + sorted(starts_with) + sorted(contains)
-            return Completion(values=result[:20])  # Limit to 20 results
+            return Completion(
+                values=result[:20],  # Limit to 20 results
+                hasMore=len(result) > 20,
+            )
 
     return None
 
