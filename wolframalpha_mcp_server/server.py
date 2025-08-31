@@ -5,6 +5,13 @@ import os
 import requests
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from mcp.types import (
+    Completion,
+    CompletionArgument,
+    CompletionContext,
+    PromptReference,
+    ResourceTemplateReference,
+)
 from pydantic import BaseModel
 
 # Load environment variables
@@ -1157,7 +1164,11 @@ query_wolfram("{value} {from_unit} to {to_unit}")"""
 
 
 @mcp.completion()
-async def handle_completion(ref, argument, context):
+async def handle_completion(
+    ref: PromptReference | ResourceTemplateReference,
+    argument: CompletionArgument,
+    context: CompletionContext | None,
+) -> Completion | None:
     """
     Handle completions for unit conversion prompts.
 
@@ -1169,14 +1180,15 @@ async def handle_completion(ref, argument, context):
     Returns:
         Completion object with values list and hasMore flag
     """
-    from mcp.types import Completion
 
     # Handle unit_conversion prompt completions
     # Three completion patterns:
     # 1. No context → return all units (769 units across 40 categories)
     # 2. Valid context → return units from same physical quantity category only
     # 3. Invalid context → return empty result (unit not found in any category)
-    if hasattr(ref, "name") and ref.name == "unit_conversion":
+    # Handle ref object structure: {type: "ref/prompt", name: "unit_conversion"}
+    ref_name = getattr(ref, "name", None)
+    if ref_name == "unit_conversion":
         if argument.name in ["from_unit", "to_unit"]:
             query = argument.value.lower().strip() if argument.value else ""
 
@@ -1189,13 +1201,14 @@ async def handle_completion(ref, argument, context):
                 other_arg_name = (
                     "to_unit" if argument.name == "from_unit" else "from_unit"
                 )
-                other_unit = None
 
-                for arg in context.arguments:
-                    if arg.name == other_arg_name and arg.value:
-                        other_unit = arg.value.strip()
-                        context_provided = True
-                        break
+                # context.arguments is a dict mapping argument names to values
+                arguments = context.arguments
+                other_unit = arguments.get(other_arg_name)
+
+                if other_unit:
+                    other_unit = str(other_unit).strip()
+                    context_provided = True
 
                 if other_unit:
                     # Find which physical quantity category the other unit belongs to

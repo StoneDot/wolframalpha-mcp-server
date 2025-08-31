@@ -204,7 +204,8 @@ async def test_completion_functionality():
             self.value = value
 
     class MockContext:
-        def __init__(self, arguments):
+        def __init__(self, **arguments):
+            # context.arguments is a dict mapping argument names to values
             self.arguments = arguments
 
     test_cases = [
@@ -236,15 +237,22 @@ async def test_completion_functionality():
             "name": "Unit completion with context - length category",
             "ref": MockPromptRef("unit_conversion"),
             "argument": MockArgument("to_unit", "m"),
-            "context": MockContext([MockArgument("from_unit", "foot")]),
+            "context": MockContext(from_unit="foot", value="100"),
             "expected_contains": ["meter", "meters", "m"],
         },
         {
             "name": "Unit completion with invalid context - should return empty",
             "ref": MockPromptRef("unit_conversion"),
             "argument": MockArgument("to_unit", "m"),
-            "context": MockContext([MockArgument("from_unit", "invalid_unit_xyz")]),
+            "context": MockContext(from_unit="invalid_unit_xyz", value="100"),
             "expected_empty": True,
+        },
+        {
+            "name": "Real MCP request format - only value in context",
+            "ref": MockPromptRef("unit_conversion"),
+            "argument": MockArgument("from_unit", "fpm"),
+            "context": MockContext(value="100"),
+            "expected_contains": ["fpm"],
         },
         {
             "name": "Non-unit conversion prompt (should return None)",
