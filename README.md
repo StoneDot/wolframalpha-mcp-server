@@ -5,6 +5,9 @@ A Model Context Protocol (MCP) server that provides access to the Wolfram|Alpha 
 ## Features
 
 - Query the Wolfram|Alpha LLM API with natural language
+- **Unit conversion prompts** with intelligent unit suggestions
+- **Smart completions** for 40+ physical quantity categories (769+ units)
+- Support for abbreviations, plurals, and technical units
 - Proper error handling for common API issues
 - Support for optional parameters (character limits, units, location)
 - Easy integration with Claude Desktop and other MCP clients
