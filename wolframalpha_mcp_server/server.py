@@ -1,9 +1,9 @@
 """Wolfram|Alpha MCP Server implementation."""
 
 import os
-import urllib.parse
-from typing import Optional, List, Dict, Any
+from typing import Optional
 import requests
+from pydantic import BaseModel
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 
@@ -17,19 +17,19 @@ mcp = FastMCP(name="wolframalpha-llm")
 UNIT_CATEGORIES = {
     "length": [
         # Full names (singular and plural)
-        "meter", "meters", "foot", "feet", "inch", "inches", "centimeter", "centimeters", 
+        "meter", "meters", "foot", "feet", "inch", "inches", "centimeter", "centimeters",
         "kilometer", "kilometers", "mile", "miles", "yard", "yards", "millimeter", "millimeters",
         "micrometer", "micrometers", "nanometer", "nanometers", "picometer", "picometers",
-        "nautical_mile", "nautical_miles", "statute_mile", "statute_miles", "fathom", "fathoms", 
+        "nautical_mile", "nautical_miles", "statute_mile", "statute_miles", "fathom", "fathoms",
         "furlong", "furlongs", "chain", "chains", "flight_level", "flight_levels",
         # Abbreviations
         "m", "ft", "in", "cm", "km", "mi", "yd", "mm", "μm", "nm", "pm", "nmi", "sm", "ftm", "FL"
     ],
     "weight": [
         # Full names (singular and plural)
-        "kilogram", "kilograms", "gram", "grams", "ounce", "ounces", 
+        "kilogram", "kilograms", "gram", "grams", "ounce", "ounces",
         "ton", "tons", "stone", "stones", "milligram", "milligrams", "microgram", "micrograms",
-        "metric_ton", "metric_tons", "short_ton", "short_tons", "long_ton", "long_tons", 
+        "metric_ton", "metric_tons", "short_ton", "short_tons", "long_ton", "long_tons",
         "grain", "grains", "carat", "carats", "troy_ounce", "troy_ounces",
         # Abbreviations
         "kg", "lb", "oz", "t", "st", "mg", "μg", "tonne"
@@ -43,37 +43,37 @@ UNIT_CATEGORIES = {
     ],
     "time": [
         # Full names (singular and plural)
-        "second", "seconds", "minute", "minutes", "hour", "hours", "day", "days", 
+        "second", "seconds", "minute", "minutes", "hour", "hours", "day", "days",
         "week", "weeks", "month", "months", "year", "years", "millisecond", "milliseconds",
-        "microsecond", "microseconds", "nanosecond", "nanoseconds", "decade", "decades", 
+        "microsecond", "microseconds", "nanosecond", "nanoseconds", "decade", "decades",
         "century", "centuries", "millennium", "millennia",
         # Abbreviations
         "s", "min", "h", "d", "w", "mo", "yr", "ms", "μs", "ns"
     ],
     "volume": [
         # Full names (singular and plural)
-        "liter", "liters", "gallon", "gallons", "quart", "quarts", "pint", "pints", 
+        "liter", "liters", "gallon", "gallons", "quart", "quarts", "pint", "pints",
         "cup", "cups", "fluid_ounce", "fluid_ounces", "milliliter", "milliliters",
-        "cubic_meter", "cubic_meters", "cubic_foot", "cubic_feet", "cubic_inch", "cubic_inches", 
+        "cubic_meter", "cubic_meters", "cubic_foot", "cubic_feet", "cubic_inch", "cubic_inches",
         "barrel", "barrels", "imperial_gallon", "imperial_gallons",
-        "us_gallon", "us_gallons", "tablespoon", "tablespoons", "teaspoon", "teaspoons", 
+        "us_gallon", "us_gallons", "tablespoon", "tablespoons", "teaspoon", "teaspoons",
         "cubic_centimeter", "cubic_centimeters",
         # Abbreviations
-        "L", "l", "qt", "pt", "fl_oz", "ml", "m³", "ft³", "in³", 
+        "L", "l", "qt", "pt", "fl_oz", "ml", "m³", "ft³", "in³",
         "bbl", "tbsp", "tsp", "cc", "cm³"
     ],
     "area": [
         # Full names (singular and plural)
-        "square_meter", "square_meters", "square_foot", "square_feet", "acre", "acres", 
+        "square_meter", "square_meters", "square_foot", "square_feet", "acre", "acres",
         "hectare", "hectares", "square_inch", "square_inches", "square_mile", "square_miles",
-        "square_kilometer", "square_kilometers", "square_centimeter", "square_centimeters", 
+        "square_kilometer", "square_kilometers", "square_centimeter", "square_centimeters",
         "square_millimeter", "square_millimeters", "square_yard", "square_yards",
         # Abbreviations
         "m²", "ft²", "ac", "ha", "in²", "mi²", "km²", "cm²", "mm²", "yd²"
     ],
     "pressure": [
         # Full names (singular and plural)
-        "pascal", "pascals", "bar", "bars", "atmosphere", "atmospheres", "psi", 
+        "pascal", "pascals", "bar", "bars", "atmosphere", "atmospheres", "psi",
         "torr", "torrs", "mmHg", "inHg", "millibar", "millibars",
         "kilopascal", "kilopascals", "megapascal", "megapascals", "hectopascal", "hectopascals",
         # Abbreviations
@@ -81,24 +81,24 @@ UNIT_CATEGORIES = {
     ],
     "energy": [
         # Full names (singular and plural)
-        "joule", "joules", "calorie", "calories", "kilowatt_hour", "kilowatt_hours", 
-        "btu", "btus", "erg", "ergs", "electron_volt", "electron_volts", 
-        "kilojoule", "kilojoules", "megajoule", "megajoules", "foot_pound", "foot_pounds", 
+        "joule", "joules", "calorie", "calories", "kilowatt_hour", "kilowatt_hours",
+        "btu", "btus", "erg", "ergs", "electron_volt", "electron_volts",
+        "kilojoule", "kilojoules", "megajoule", "megajoules", "foot_pound", "foot_pounds",
         "therm", "therms", "kilocalorie", "kilocalories",
         # Abbreviations
         "J", "cal", "kWh", "BTU", "eV", "kJ", "MJ", "ft·lb", "kcal"
     ],
     "power": [
         # Full names (singular and plural)
-        "watt", "watts", "horsepower", "kilowatt", "kilowatts", "btu_per_hour", 
-        "foot_pound_per_second", "metric_horsepower", "electrical_horsepower", 
+        "watt", "watts", "horsepower", "kilowatt", "kilowatts", "btu_per_hour",
+        "foot_pound_per_second", "metric_horsepower", "electrical_horsepower",
         "megawatt", "megawatts", "gigawatt", "gigawatts",
         # Abbreviations
         "W", "hp", "kW", "BTU/h", "ft·lb/s", "MW", "GW"
     ],
     "speed": [
         # Full names (singular and plural)
-        "meter_per_second", "meters_per_second", "kilometer_per_hour", "kilometers_per_hour", 
+        "meter_per_second", "meters_per_second", "kilometer_per_hour", "kilometers_per_hour",
         "mile_per_hour", "miles_per_hour", "knot", "knots", "foot_per_second", "feet_per_second",
         "feet_per_minute", "mach", "speed_of_light", "speed_of_sound",
         # Abbreviations
@@ -106,7 +106,7 @@ UNIT_CATEGORIES = {
     ],
     "angle": [
         # Full names (singular and plural)
-        "degree", "degrees", "radian", "radians", "gradian", "gradians", 
+        "degree", "degrees", "radian", "radians", "gradian", "gradians",
         "milliradian", "milliradians", "arcsecond", "arcseconds", "arcminute", "arcminutes",
         "turn", "turns", "revolution", "revolutions",
         # Abbreviations
@@ -155,7 +155,7 @@ UNIT_CATEGORIES = {
     ],
     "acceleration": [
         # Full names (singular and plural)
-        "meter_per_second_squared", "meters_per_second_squared", "foot_per_second_squared", 
+        "meter_per_second_squared", "meters_per_second_squared", "foot_per_second_squared",
         "feet_per_second_squared", "gal", "galileo", "galileos", "gravity",
         # Abbreviations
         "m/s²", "ft/s²", "g"
@@ -219,12 +219,12 @@ UNIT_CATEGORIES = {
     ],
     "currency": [
         # Major currencies
-        "dollar", "dollars", "euro", "euros", "yen", "pound", "pounds", 
+        "dollar", "dollars", "euro", "euros", "yen", "pound", "pounds",
         "yuan", "franc", "francs", "ruble", "rubles", "rupee", "rupees",
         "won", "peso", "pesos", "real", "reals", "rand", "krona", "kronor",
         "shekel", "shekels", "dinar", "dinars", "dirham", "dirhams",
         # Abbreviations and symbols
-        "USD", "EUR", "JPY", "GBP", "CNY", "CHF", "RUB", "INR", 
+        "USD", "EUR", "JPY", "GBP", "CNY", "CHF", "RUB", "INR",
         "KRW", "MXN", "BRL", "ZAR", "SEK", "ILS", "JOD", "AED",
         "$", "€", "¥", "£", "₹", "₽", "₩", "₨", "＄"
     ],
@@ -303,7 +303,7 @@ UNIT_CATEGORIES = {
     ],
     "radioactivity": [
         # Full names (singular and plural)
-        "becquerel", "becquerels", "curie", "curies", "millicurie", "millicuries", 
+        "becquerel", "becquerels", "curie", "curies", "millicurie", "millicuries",
         "microcurie", "microcuries", "sievert", "sieverts", "millisievert", "millisieverts",
         "gray", "grays", "rads", "rems", "roentgen", "roentgens",
         # Abbreviations
@@ -327,6 +327,19 @@ UNIT_CATEGORIES = {
 
 WOLFRAM_BASE_URL = "https://www.wolframalpha.com/api/v1/llm-api"
 
+
+class WolframResult(BaseModel):
+    """Structured result from Wolfram|Alpha API query."""
+    success: bool
+    query: str
+    result: Optional[str] = None
+    characters: Optional[int] = None
+    error: Optional[str] = None
+    status_code: Optional[int] = None
+    suggestion: Optional[str] = None
+    response_text: Optional[str] = None
+
+
 def get_app_id() -> str:
     """Get Wolfram|Alpha App ID from environment variable."""
     app_id = os.getenv("WOLFRAM_APP_ID")
@@ -337,63 +350,63 @@ def get_app_id() -> str:
 
 @mcp.tool()
 def query_wolfram(
-    query: str, 
+    query: str,
     maxchars: Optional[int] = None,
     units: Optional[str] = None,
     location: Optional[str] = None
-) -> dict:
+) -> WolframResult:
     """
     Query the Wolfram|Alpha LLM API for computational results and knowledge.
-    
+
     IMPORTANT USAGE GUIDELINES:
-    
+
     SUPPORTED TOPICS:
     - Mathematics: calculations, derivatives, integrals, equations, statistics
-    - Physics: constants, formulas, unit conversions, physical properties  
+    - Physics: constants, formulas, unit conversions, physical properties
     - Chemistry: elements, compounds, reactions, molecular properties
     - Geography: countries, cities, populations, geographic data
     - History: dates, events, historical figures, timelines
     - Art: artists, artworks, cultural information
     - Astronomy: celestial objects, astronomical data, space facts
     - General knowledge: facts, comparisons, data analysis
-    
+
     QUERY OPTIMIZATION:
     - Convert complex questions to simple keyword queries when possible
       Example: "How many people live in France?" → "France population"
     - Use English only - translate non-English queries before sending
     - Keep queries concise and specific for best results
     - For multiple data properties, make separate calls for each property
-    
+
     MATHEMATICAL NOTATION:
     - Always use proper exponent notation: "6*10^14" (NEVER "6e14")
     - Use single-letter variable names only (e.g., x, y, n, n1, n_1)
     - Use named physical constants without substitution (e.g., "speed of light")
     - Include spaces in compound units (e.g., "Ω m" for ohm*meter)
     - For equations with units, consider solving without units first
-    
+
     OUTPUT HANDLING:
     - Results may include image URLs - display with Markdown: ![URL]
     - Mathematical formulas use proper Markdown formatting
     - Never mention knowledge cutoff dates (Wolfram may have recent data)
     - If results seem irrelevant, the API may suggest alternative assumptions
-    
+
     TROUBLESHOOTING:
     - Invalid queries return suggestions for corrections
     - Authentication errors indicate App ID issues
     - Status 501 means query couldn't be interpreted (may include suggestions)
-    
+
     Args:
         query: Natural language query in English (mathematical, scientific, factual)
         maxchars: Maximum response characters (default: 6800, can be reduced for shorter answers)
         units: Unit system preference ("metric", "imperial", etc.)
         location: Geographic context for location-dependent queries
-        
+
     Returns:
-        Dictionary with 'success' boolean and either 'result' (string) or 'error' details
-        
+        WolframResult object with structured response data including 'success' boolean and either 'result' (string) or 'error' details
+
     Examples:
         query_wolfram("derivative of x^2")
-        query_wolfram("population of Tokyo", maxchars=1000)  
+        query_wolfram("population of Tokyo", maxchars=1000)
         query_wolfram("speed of light in km/s")
         query_wolfram("solve x^2 + 3x + 2 = 0")
         query_wolfram("weather in Paris", location="Paris, France")
@@ -401,46 +414,46 @@ def query_wolfram(
     """
     try:
         app_id = get_app_id()
-        
+
         # Build parameters
         params = {
             "input": query,
             "appid": app_id
         }
-        
+
         if maxchars is not None:
             params["maxchars"] = str(maxchars)
         if units:
             params["units"] = units
         if location:
             params["location"] = location
-            
+
         # Make the API request
         response = requests.get(WOLFRAM_BASE_URL, params=params, timeout=30)
-        
+
         # Handle different HTTP status codes
         if response.status_code == 200:
-            return {
-                "success": True,
-                "query": query,
-                "result": response.text,
-                "characters": len(response.text)
-            }
+            return WolframResult(
+                success=True,
+                query=query,
+                result=response.text,
+                characters=len(response.text)
+            )
         elif response.status_code == 501:
-            return {
-                "success": False,
-                "error": "Input could not be interpreted",
-                "status_code": 501,
-                "query": query,
-                "suggestion": response.text if response.text else None
-            }
+            return WolframResult(
+                success=False,
+                error="Input could not be interpreted",
+                status_code=501,
+                query=query,
+                suggestion=response.text if response.text else None
+            )
         elif response.status_code == 400:
-            return {
-                "success": False,
-                "error": "Bad request - missing or invalid input parameter",
-                "status_code": 400,
-                "query": query
-            }
+            return WolframResult(
+                success=False,
+                error="Bad request - missing or invalid input parameter",
+                status_code=400,
+                query=query
+            )
         elif response.status_code in [401, 403]:
             error_text = response.text.lower()
             if "invalid appid" in error_text:
@@ -449,46 +462,46 @@ def query_wolfram(
                 error_msg = "App ID missing"
             else:
                 error_msg = "Authentication error"
-                
-            return {
-                "success": False,
-                "error": error_msg,
-                "status_code": response.status_code,
-                "query": query
-            }
+
+            return WolframResult(
+                success=False,
+                error=error_msg,
+                status_code=response.status_code,
+                query=query
+            )
         else:
-            return {
-                "success": False,
-                "error": f"Unexpected status code: {response.status_code}",
-                "status_code": response.status_code,
-                "query": query,
-                "response_text": response.text
-            }
-            
+            return WolframResult(
+                success=False,
+                error=f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+                query=query,
+                response_text=response.text
+            )
+
     except requests.exceptions.Timeout:
-        return {
-            "success": False,
-            "error": "Request timed out after 30 seconds",
-            "query": query
-        }
+        return WolframResult(
+            success=False,
+            error="Request timed out after 30 seconds",
+            query=query
+        )
     except requests.exceptions.RequestException as e:
-        return {
-            "success": False,
-            "error": f"Network error: {str(e)}",
-            "query": query
-        }
+        return WolframResult(
+            success=False,
+            error=f"Network error: {str(e)}",
+            query=query
+        )
     except ValueError as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "query": query
-        }
+        return WolframResult(
+            success=False,
+            error=str(e),
+            query=query
+        )
     except Exception as e:
-        return {
-            "success": False,
-            "error": f"Unexpected error: {str(e)}",
-            "query": query
-        }
+        return WolframResult(
+            success=False,
+            error=f"Unexpected error: {str(e)}",
+            query=query
+        )
 
 
 @mcp.prompt()
@@ -500,16 +513,16 @@ def unit_conversion(
 ) -> str:
     """
     Generate a prompt for unit conversion using Wolfram|Alpha.
-    
+
     This prompt will instruct the user to use the query_wolfram tool to perform
     accurate unit conversions.
-    
+
     Args:
         value: The numerical value to convert
         from_unit: The source unit (e.g., "meter", "pound", "celsius")
         to_unit: The target unit (e.g., "foot", "kilogram", "fahrenheit")
         precision: Optional number of decimal places for the result
-        
+
     Returns:
         A formatted prompt string for unit conversion
     """
@@ -518,10 +531,10 @@ def unit_conversion(
 Value: {value}
 From unit: {from_unit}
 To unit: {to_unit}"""
-    
+
     if precision is not None:
         prompt += f"\nPrecision: {precision} decimal places"
-    
+
     prompt += f"""
 
 Use the `query_wolfram` tool to perform this conversion by searching for:
@@ -533,7 +546,7 @@ Please format the result as:
 
 Example usage:
 query_wolfram("{value} {from_unit} to {to_unit}")"""
-    
+
     return prompt
 
 
@@ -541,45 +554,45 @@ query_wolfram("{value} {from_unit} to {to_unit}")"""
 async def handle_completion(ref, argument, context):
     """
     Handle completions for unit conversion prompts.
-    
+
     Args:
         ref: PromptReference or ResourceTemplateReference
         argument: CompletionArgument with name and partial value
         context: Optional CompletionContext with previously resolved arguments
-        
+
     Returns:
         Completion object with values list
     """
     from mcp.types import Completion
-    
+
     # Handle unit_conversion prompt completions
     if hasattr(ref, 'name') and ref.name == "unit_conversion":
         if argument.name in ["from_unit", "to_unit"]:
             query = argument.value.lower().strip() if argument.value else ""
-            
+
             # Get all units from all categories
             all_units = []
             for category_units in UNIT_CATEGORIES.values():
                 all_units.extend(category_units)
-            
+
             if not query:
                 # Return first 20 units if no query
                 return Completion(values=sorted(all_units)[:20])
-            
+
             # Filter units that contain the query string
             matching_units = [
-                unit for unit in all_units 
+                unit for unit in all_units
                 if query in unit.lower()
             ]
-            
+
             # Sort by relevance (exact matches first, then starts with, then contains)
             exact_matches = [unit for unit in matching_units if unit.lower() == query]
             starts_with = [unit for unit in matching_units if unit.lower().startswith(query) and unit.lower() != query]
             contains = [unit for unit in matching_units if query in unit.lower() and not unit.lower().startswith(query)]
-            
+
             result = exact_matches + sorted(starts_with) + sorted(contains)
             return Completion(values=result[:20])  # Limit to 20 results
-    
+
     return None
 
 
